@@ -1,0 +1,6 @@
+{
+  "name": "MasterExcel Pro - Academia de Excel & Finanzas",
+  "description": "Embudo y plataforma de cursos de Excel Básico, Intermedio y Avanzado. Descarga gratis la Plantilla Automatizada de Finanzas Personales y acelera tu productividad.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
