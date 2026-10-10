@@ -50,7 +50,8 @@ import {
   formatDuration, 
   AnalyticsMetrics,
   syncLeadsCount,
-  exportAnalyticsToExcel
+  exportAnalyticsToExcel,
+  fetchRealMetricsFromFirestore
 } from '../services/analytics';
 
 interface Props {
@@ -93,13 +94,31 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
     setFormData(config);
   }, [config]);
 
-  // Refresh analytics whenever drawer opens or tab changes
+  // Load real data from Firebase Firestore & Local Storage
+  const loadData = async (token?: string | null) => {
+    setLoading(true);
+    try {
+      const realMetrics = await fetchRealMetricsFromFirestore();
+      setMetrics(realMetrics);
+      const activeToken = token || adminToken;
+      if (activeToken) {
+        const loadedLeads = await fetchLeadsUnified(activeToken);
+        setLeads(loadedLeads);
+        syncLeadsCount(loadedLeads.length);
+      }
+    } catch (err) {
+      console.error('Error fetching admin data:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Refresh real metrics and leads whenever drawer opens or tab changes
   useEffect(() => {
     if (isOpen) {
-      const fresh = getAnalyticsMetrics();
-      setMetrics(fresh);
+      loadData(adminToken);
     }
-  }, [isOpen, activeTab]);
+  }, [isOpen, activeTab, adminToken]);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,10 +131,7 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
         setAdminToken(auth.token);
         localStorage.setItem('hoja_maestra_admin_token', auth.token);
         setPasswordInput('');
-        const loadedLeads = await fetchLeadsUnified(auth.token);
-        setLeads(loadedLeads);
-        syncLeadsCount(loadedLeads.length);
-        setMetrics(getAnalyticsMetrics());
+        await loadData(auth.token);
       } else {
         setAuthError('Contraseña incorrecta. (Prueba con admin2026)');
       }
@@ -133,17 +149,7 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
   };
 
   const fetchLeadsWithToken = async (token: string) => {
-    setLoading(true);
-    try {
-      const loadedLeads = await fetchLeadsUnified(token);
-      setLeads(loadedLeads);
-      syncLeadsCount(loadedLeads.length);
-      setMetrics(getAnalyticsMetrics());
-    } catch (err) {
-      console.error('Error fetching leads:', err);
-    } finally {
-      setLoading(false);
-    }
+    await loadData(token);
   };
 
   useEffect(() => {
@@ -179,12 +185,19 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
     setTimeout(() => setStatusMessage(null), 4000);
   };
 
-  const handleResetMetrics = () => {
-    if (confirm('¿Deseas reiniciar las estadísticas para comenzar a medir una nueva campaña publicitaria?')) {
-      const fresh = resetAnalyticsMetrics();
-      setMetrics(fresh);
-      setStatusMessage('Métricas de campaña reiniciadas.');
-      setTimeout(() => setStatusMessage(null), 4000);
+  const handleResetMetrics = async () => {
+    if (confirm('¿Confirmas reiniciar las métricas a ceros (0)? Esto asegurará que todas las estadísticas de visitantes, clics y conversiones comiencen a medirse de forma limpia y 100% real a partir de este momento.')) {
+      setLoading(true);
+      try {
+        const fresh = await resetAnalyticsMetrics();
+        setMetrics(fresh);
+        setStatusMessage('Métricas reiniciadas a ceros (0) en Firebase Firestore y navegador.');
+        setTimeout(() => setStatusMessage(null), 4000);
+      } catch {
+        alert('Error al reiniciar métricas.');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -473,15 +486,13 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
 
           <div className="hidden sm:flex items-center gap-2">
             <button
-              onClick={() => {
-                setMetrics(getAnalyticsMetrics());
-                if (adminToken) fetchLeadsWithToken(adminToken);
-              }}
+              onClick={() => loadData(adminToken)}
               disabled={loading}
-              className="p-1.5 text-slate-500 hover:text-slate-800 transition cursor-pointer"
-              title="Recargar datos y métricas"
+              className="p-1.5 text-slate-500 hover:text-slate-800 transition cursor-pointer flex items-center gap-1.5 text-xs font-semibold"
+              title="Recargar datos y métricas en tiempo real desde Firebase"
             >
-              <RotateCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
+              <RotateCw className={`w-3.5 h-3.5 ${loading ? 'animate-spin' : ''}`} />
+              <span>Sincronizar Cloud</span>
             </button>
           </div>
         </div>
@@ -493,23 +504,26 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
           {activeTab === 'metrics' && (
             <div className="space-y-6">
               
-              {/* Top Banner with live badge & actions */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200">
+              {/* Top Banner with real data verification & actions */}
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
                 <div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <span className="relative flex h-2.5 w-2.5">
                       <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                     </span>
-                    <h4 className="font-bold text-slate-900 text-sm">
-                      Métricas de Tráfico y Comportamiento del Embudo
+                    <h4 className="font-extrabold text-slate-900 text-sm">
+                      Métricas Reales del Embudo • Hoja Maestra
                     </h4>
-                    <span className="text-[10px] bg-emerald-100 text-emerald-800 font-bold px-2 py-0.5 rounded-full border border-emerald-200">
-                      En Vivo
+                    <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full border border-emerald-300">
+                      100% DATOS REALES
+                    </span>
+                    <span className="text-[10px] bg-slate-100 text-slate-600 font-mono px-2 py-0.5 rounded border border-slate-200">
+                      Firestore DB Conectada
                     </span>
                   </div>
-                  <p className="text-xs text-slate-500 mt-0.5">
-                    Monitorea en tiempo real visitantes, clics en enlaces, retención de tiempo, tasa de conversión y clics en cursos.
+                  <p className="text-xs text-slate-500 mt-1">
+                    Cero simulaciones ni datos de prueba. Todos los valores reflejan los visitantes reales, tiempos reales, clics y prospectos en tu base de datos de Firebase.
                   </p>
                 </div>
 
@@ -517,28 +531,29 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
                   <button
                     onClick={() => exportAnalyticsToExcel(metrics)}
                     className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer"
-                    title="Descargar resumen de métricas en archivo Excel"
+                    title="Descargar reporte de métricas reales en archivo Excel"
                   >
                     <FileSpreadsheet className="w-3.5 h-3.5" />
-                    <span>Exportar Métricas (.xlsx)</span>
+                    <span>Exportar Excel (.xlsx)</span>
                   </button>
 
                   <button
-                    onClick={() => setMetrics(getAnalyticsMetrics())}
+                    onClick={() => loadData(adminToken)}
+                    disabled={loading}
                     className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
-                    title="Actualizar métricas"
+                    title="Actualizar datos desde Firebase Firestore"
                   >
-                    <RotateCw className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Actualizar</span>
+                    <RotateCw className={`w-3.5 h-3.5 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
+                    <span>Actualizar Real</span>
                   </button>
 
                   <button
                     onClick={handleResetMetrics}
                     className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer border border-slate-200"
-                    title="Reiniciar métricas para nueva campaña publicitaria"
+                    title="Reiniciar todos los contadores a 0 para una nueva medición limpia"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Reiniciar Campaña</span>
+                    <span>Reiniciar a Ceros</span>
                   </button>
                 </div>
               </div>
@@ -1027,8 +1042,22 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
                     <tbody className="divide-y divide-slate-100">
                       {filteredLeads.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="p-8 text-center text-slate-400">
-                            No se encontraron registros de prospectos.
+                          <td colSpan={5} className="p-10 text-center">
+                            <div className="max-w-md mx-auto space-y-3">
+                              <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mx-auto border border-emerald-100">
+                                <Users className="w-6 h-6" />
+                              </div>
+                              <h4 className="text-sm font-bold text-slate-800">
+                                0 Prospectos Registrados Aún
+                              </h4>
+                              <p className="text-xs text-slate-500 leading-relaxed">
+                                Tu base de datos en <strong>Firebase Firestore</strong> está conectada y activa en tiempo real. Todos los visitantes que completen el formulario de la plantilla en el sitio web se registrarán automáticamente aquí con su nombre, correo, teléfono y nivel.
+                              </p>
+                              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-[10px] font-mono text-slate-600 border border-slate-200">
+                                <Lock className="w-2.5 h-2.5 text-emerald-600" />
+                                <span>Colección: /leads en Firestore</span>
+                              </div>
+                            </div>
                           </td>
                         </tr>
                       ) : (

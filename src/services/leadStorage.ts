@@ -21,48 +21,6 @@ export const DEFAULT_CONFIG: AppConfig = {
   templateFileName: 'Plantilla_Finanzas_Personales_Hoja_Maestra.xlsx',
 };
 
-// Seed leads for initial demonstration
-const INITIAL_DEMO_LEADS: Lead[] = [
-  {
-    id: 'lead_101',
-    name: 'Carlos Mendoza Ramos',
-    email: 'carlos.mendoza@empresa.com',
-    phone: '+52 55 4192 8821',
-    level: 'intermedio',
-    primaryGoal: 'automatizar',
-    consentPrivacy: true,
-    consentMarketing: true,
-    createdAt: new Date(Date.now() - 3600000 * 24 * 2).toISOString(),
-    status: 'active',
-    emailNotification: {
-      status: 'delivered',
-      sentAt: new Date(Date.now() - 3600000 * 24 * 2).toISOString(),
-      subject: '¡Aquí tienes tu Plantilla de Finanzas Personales + Regalo!',
-      messagePreview: 'Hola Carlos, bienvenido a Hoja Maestra. Adjunto encontrarás la plantilla automatizada...',
-    },
-    downloads: 2,
-  },
-  {
-    id: 'lead_102',
-    name: 'Mariana Silva G.',
-    email: 'mariana.silva@consultora.cl',
-    phone: '+56 9 8765 4321',
-    level: 'basico',
-    primaryGoal: 'empleo',
-    consentPrivacy: true,
-    consentMarketing: true,
-    createdAt: new Date(Date.now() - 3600000 * 18).toISOString(),
-    status: 'active',
-    emailNotification: {
-      status: 'delivered',
-      sentAt: new Date(Date.now() - 3600000 * 18).toISOString(),
-      subject: '¡Aquí tienes tu Plantilla de Finanzas Personales + Regalo!',
-      messagePreview: 'Hola Mariana, bienvenido a Hoja Maestra. Adjunto encontrarás la plantilla...',
-    },
-    downloads: 1,
-  },
-];
-
 // Helper to check if a response is actual JSON and not an HTML 404 page
 async function safeJsonParse(res: Response): Promise<{ isJson: boolean; data: any }> {
   const contentType = res.headers.get('content-type') || '';
@@ -81,17 +39,29 @@ async function safeJsonParse(res: Response): Promise<{ isJson: boolean; data: an
   }
 }
 
-// Local storage readers & writers
+// Local storage readers & writers (Real data only, zero dummy records)
 export function getLocalLeads(): Lead[] {
   try {
     const raw = localStorage.getItem(LEADS_STORAGE_KEY);
     if (!raw) {
-      localStorage.setItem(LEADS_STORAGE_KEY, JSON.stringify(INITIAL_DEMO_LEADS));
-      return INITIAL_DEMO_LEADS;
+      return [];
     }
-    return JSON.parse(raw);
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    // Actively purge any legacy dummy test leads from user browser
+    const cleanLeads = parsed.filter(
+      (l: Lead) =>
+        !['lead_101', 'lead_102', 'lead_103'].includes(l.id) &&
+        !l.email?.includes('carlos.mendoza') &&
+        !l.email?.includes('mariana.silva') &&
+        !l.email?.includes('andres.felipe')
+    );
+    if (cleanLeads.length !== parsed.length) {
+      localStorage.setItem(LEADS_STORAGE_KEY, JSON.stringify(cleanLeads));
+    }
+    return cleanLeads;
   } catch {
-    return INITIAL_DEMO_LEADS;
+    return [];
   }
 }
 
@@ -271,23 +241,30 @@ export async function verifyAdminPassword(password: string): Promise<{ success: 
   return { success: false, token: '' };
 }
 
-// Fetch leads from Firebase Firestore, server API, or localStorage
+// Fetch leads from Firebase Firestore, server API, or localStorage (Strictly real data)
 export async function fetchLeadsUnified(adminToken: string): Promise<Lead[]> {
   // 1. Try Firebase Firestore
   try {
     const snapshot = await getDocs(collection(db, 'leads'));
-    if (!snapshot.empty) {
-      const firestoreLeads: Lead[] = [];
-      snapshot.forEach((d) => {
-        firestoreLeads.push(d.data() as Lead);
-      });
-      // Sort newest first
-      firestoreLeads.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-      saveLocalLeads(firestoreLeads);
-      return firestoreLeads;
-    }
+    const firestoreLeads: Lead[] = [];
+    snapshot.forEach((d) => {
+      const data = d.data() as Lead;
+      if (
+        data &&
+        !['lead_101', 'lead_102', 'lead_103'].includes(data.id) &&
+        !data.email?.includes('carlos.mendoza') &&
+        !data.email?.includes('mariana.silva') &&
+        !data.email?.includes('andres.felipe')
+      ) {
+        firestoreLeads.push(data);
+      }
+    });
+    // Sort newest first
+    firestoreLeads.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    saveLocalLeads(firestoreLeads);
+    return firestoreLeads;
   } catch (err) {
-    console.warn('Firestore fetch leads error, falling back:', err);
+    console.warn('Firestore fetch leads error, trying backend/local fallback:', err);
   }
 
   // 2. Try backend API
@@ -297,8 +274,15 @@ export async function fetchLeadsUnified(adminToken: string): Promise<Lead[]> {
     });
     const parsed = await safeJsonParse(res);
     if (parsed.isJson && parsed.data?.success && Array.isArray(parsed.data.leads)) {
-      saveLocalLeads(parsed.data.leads);
-      return parsed.data.leads;
+      const clean = parsed.data.leads.filter(
+        (l: Lead) =>
+          !['lead_101', 'lead_102', 'lead_103'].includes(l.id) &&
+          !l.email?.includes('carlos.mendoza') &&
+          !l.email?.includes('mariana.silva') &&
+          !l.email?.includes('andres.felipe')
+      );
+      saveLocalLeads(clean);
+      return clean;
     }
   } catch {
     // Fall back to local storage

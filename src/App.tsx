@@ -93,7 +93,8 @@ export default function App() {
   }, []);
 
   const handleLeadCreated = (_newLead: Lead) => {
-    // Lead created silently in database
+    const leads = getLocalLeads();
+    syncLeadsCount(leads.length);
   };
 
   const handleLeadDeleted = (_email: string) => {

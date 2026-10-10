@@ -82,71 +82,21 @@ const defaultConfig: AppConfig = {
 function readLeads(): Lead[] {
   try {
     if (!fs.existsSync(LEADS_FILE)) {
-      // Seed with initial realistic demonstration leads
-      const initialLeads: Lead[] = [
-        {
-          id: 'lead_101',
-          name: 'Carlos Mendoza Ramos',
-          email: 'carlos.mendoza@empresa.com',
-          phone: '+52 55 4192 8821',
-          level: 'intermedio',
-          primaryGoal: 'automatizar',
-          consentPrivacy: true,
-          consentMarketing: true,
-          createdAt: new Date(Date.now() - 3600000 * 24 * 2).toISOString(),
-          status: 'active',
-          emailNotification: {
-            status: 'delivered',
-            sentAt: new Date(Date.now() - 3600000 * 24 * 2).toISOString(),
-            subject: '¡Aquí tienes tu Plantilla de Finanzas Personales + Regalo!',
-            messagePreview: 'Hola Carlos, bienvenido a MasterExcel Pro. Adjunto encontrarás la plantilla automatizada...',
-          },
-          downloads: 2,
-        },
-        {
-          id: 'lead_102',
-          name: 'Mariana Silva G.',
-          email: 'mariana.silva@consultora.cl',
-          phone: '+56 9 8765 4321',
-          level: 'basico',
-          primaryGoal: 'empleo',
-          consentPrivacy: true,
-          consentMarketing: true,
-          createdAt: new Date(Date.now() - 3600000 * 18).toISOString(),
-          status: 'active',
-          emailNotification: {
-            status: 'delivered',
-            sentAt: new Date(Date.now() - 3600000 * 18).toISOString(),
-            subject: '¡Aquí tienes tu Plantilla de Finanzas Personales + Regalo!',
-            messagePreview: 'Hola Mariana, bienvenido a MasterExcel Pro. Adjunto encontrarás la plantilla...',
-          },
-          downloads: 1,
-        },
-        {
-          id: 'lead_103',
-          name: 'Andrés Felipe Morales',
-          email: 'andres.felipe@banco.com.co',
-          phone: '+57 312 984 5510',
-          level: 'avanzado',
-          primaryGoal: 'certificacion',
-          consentPrivacy: true,
-          consentMarketing: false,
-          createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-          status: 'active',
-          emailNotification: {
-            status: 'delivered',
-            sentAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-            subject: '¡Aquí tienes tu Plantilla de Finanzas Personales + Regalo!',
-            messagePreview: 'Hola Andrés Felipe, bienvenido a MasterExcel Pro. Adjunto encontrarás la plantilla...',
-          },
-          downloads: 1,
-        },
-      ];
-      fs.writeFileSync(LEADS_FILE, JSON.stringify(initialLeads, null, 2), 'utf8');
-      return initialLeads;
+      fs.writeFileSync(LEADS_FILE, JSON.stringify([], null, 2), 'utf8');
+      return [];
     }
     const data = fs.readFileSync(LEADS_FILE, 'utf8');
-    return JSON.parse(data);
+    const parsed = JSON.parse(data);
+    // Filter out any legacy dummy leads
+    return Array.isArray(parsed)
+      ? parsed.filter(
+          (l: Lead) =>
+            !['lead_101', 'lead_102', 'lead_103'].includes(l.id) &&
+            !l.email?.includes('carlos.mendoza') &&
+            !l.email?.includes('mariana.silva') &&
+            !l.email?.includes('andres.felipe')
+        )
+      : [];
   } catch (err) {
     console.error('Error reading leads:', err);
     return [];
