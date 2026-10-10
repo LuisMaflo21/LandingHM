@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { X, ShieldCheck, Trash2, CheckCircle2, AlertCircle, RefreshCw, FileText } from 'lucide-react';
 import { AppConfig } from '../types';
+import { deleteLeadUnified } from '../services/leadStorage';
 
 interface Props {
   activeModal: 'privacy' | 'terms' | 'refund' | 'cookies' | 'delete-data' | null;
@@ -23,27 +24,22 @@ export function LegalModals({ activeModal, onClose, config, onLeadDeleted }: Pro
     setDeleteError(null);
     setDeleteMessage(null);
 
-    if (!deleteEmail.trim() || !deleteEmail.includes('@')) {
+    const emailToClean = deleteEmail.trim().toLowerCase();
+    if (!emailToClean || !emailToClean.includes('@')) {
       setDeleteError('Por favor introduce un correo válido.');
       return;
     }
 
     setDeleteLoading(true);
     try {
-      const res = await fetch(`/api/leads/${encodeURIComponent(deleteEmail.trim().toLowerCase())}`, {
-        method: 'DELETE',
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || 'Error al procesar la solicitud.');
-      }
-      setDeleteMessage(data.message);
+      await deleteLeadUnified(emailToClean, 'admin2026');
+      setDeleteMessage(`El registro de ${emailToClean} y todos sus datos personales han sido eliminados correctamente de la base de datos.`);
       if (onLeadDeleted) {
-        onLeadDeleted(deleteEmail.trim().toLowerCase());
+        onLeadDeleted(emailToClean);
       }
       setDeleteEmail('');
-    } catch (err: unknown) {
-      setDeleteError(err instanceof Error ? err.message : 'Error al conectar con la base de datos.');
+    } catch {
+      setDeleteError('Error al procesar la solicitud.');
     } finally {
       setDeleteLoading(false);
     }

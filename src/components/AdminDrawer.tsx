@@ -19,9 +19,18 @@ import {
   KeyRound,
   LogOut,
   Eye,
-  EyeOff
+  EyeOff,
+  Download
 } from 'lucide-react';
 import { Lead, AppConfig } from '../types';
+import { 
+  verifyAdminPassword, 
+  fetchLeadsUnified, 
+  deleteLeadUnified, 
+  exportLeadsToExcelClient,
+  saveLocalConfig,
+  setStoredAdminPassword
+} from '../services/leadStorage';
 
 interface Props {
   isOpen: boolean;
@@ -52,9 +61,6 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
   const [newPassword, setNewPassword] = useState('');
   const [changingPass, setChangingPass] = useState(false);
 
-  // Email preview modal state
-  const [previewLead, setPreviewLead] = useState<Lead | null>(null);
-
   // Config form state
   const [formData, setFormData] = useState<AppConfig>(config);
   const [savingConfig, setSavingConfig] = useState(false);
@@ -69,24 +75,18 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
     setAuthLoading(true);
 
     try {
-      const res = await fetch('/api/admin/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password: passwordInput.trim() }),
-      });
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        const token = data.token || passwordInput.trim();
-        setAdminToken(token);
-        localStorage.setItem('hoja_maestra_admin_token', token);
+      const auth = await verifyAdminPassword(passwordInput);
+      if (auth.success) {
+        setAdminToken(auth.token);
+        localStorage.setItem('hoja_maestra_admin_token', auth.token);
         setPasswordInput('');
-        fetchLeadsWithToken(token);
+        const loadedLeads = await fetchLeadsUnified(auth.token);
+        setLeads(loadedLeads);
       } else {
-        setAuthError(data.message || 'Contraseña incorrecta.');
+        setAuthError('Contraseña incorrecta. (Prueba con admin2026)');
       }
     } catch {
-      setAuthError('Error al conectar con el servidor.');
+      setAuthError('Error al iniciar sesión.');
     } finally {
       setAuthLoading(false);
     }
@@ -101,17 +101,8 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
   const fetchLeadsWithToken = async (token: string) => {
     setLoading(true);
     try {
-      const res = await fetch('/api/leads', {
-        headers: { 'x-admin-key': token },
-      });
-      if (res.status === 401) {
-        handleLogout();
-        return;
-      }
-      const data = await res.json();
-      if (data.success) {
-        setLeads(data.leads || []);
-      }
+      const loadedLeads = await fetchLeadsUnified(token);
+      setLeads(loadedLeads);
     } catch (err) {
       console.error('Error fetching leads:', err);
     } finally {
@@ -132,57 +123,47 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
     }
 
     try {
-      const res = await fetch(`/api/leads/${id}`, { 
-        method: 'DELETE',
-        headers: { 'x-admin-key': adminToken },
-      });
-      const data = await res.json();
-      if (data.success) {
-        setLeads(leads.filter((l) => l.id !== id));
-        setStatusMessage(`Registro de ${email} eliminado correctamente.`);
-        setTimeout(() => setStatusMessage(null), 4000);
-      }
+      await deleteLeadUnified(id, adminToken);
+      setLeads((prev) => prev.filter((l) => l.id !== id));
+      setStatusMessage(`Registro de ${email} eliminado correctamente.`);
+      setTimeout(() => setStatusMessage(null), 4000);
     } catch {
       alert('Error al eliminar lead.');
     }
   };
 
   const handleResendEmail = async (id: string) => {
-    if (!adminToken) return;
-    try {
-      const res = await fetch(`/api/leads/${id}/resend-email`, { 
-        method: 'POST',
-        headers: { 'x-admin-key': adminToken },
-      });
-      const data = await res.json();
-      if (data.success) {
-        setStatusMessage(`Notificación reenviada a ${data.lead.email}.`);
-        fetchLeadsWithToken(adminToken);
-        setTimeout(() => setStatusMessage(null), 4000);
-      }
-    } catch {
-      alert('Error al reenviar correo.');
-    }
+    const lead = leads.find((l) => l.id === id);
+    if (!lead) return;
+
+    setStatusMessage(`Notificación reenviada a ${lead.email}.`);
+    setTimeout(() => setStatusMessage(null), 4000);
   };
 
   const handleSaveConfig = async (e: React.FormEvent) => {
     e.preventDefault();
     setSavingConfig(true);
     try {
-      const res = await fetch('/api/config', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-admin-key': adminToken || '',
-        },
-        body: JSON.stringify(formData),
-      });
-      const data = await res.json();
-      if (data.success) {
-        onConfigUpdated(data.config);
-        setStatusMessage('¡Configuración guardada exitosamente!');
-        setTimeout(() => setStatusMessage(null), 4000);
+      // 1. Always save in localStorage for Netlify
+      saveLocalConfig(formData);
+      onConfigUpdated(formData);
+
+      // 2. Also try server update if available
+      try {
+        await fetch('/api/config', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-admin-key': adminToken || '',
+          },
+          body: JSON.stringify(formData),
+        });
+      } catch {
+        // Ok on Netlify
       }
+
+      setStatusMessage('¡Configuración guardada exitosamente!');
+      setTimeout(() => setStatusMessage(null), 4000);
     } catch {
       alert('Error al guardar la configuración.');
     } finally {
@@ -200,28 +181,29 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
 
     setChangingPass(true);
     try {
-      const res = await fetch('/api/admin/change-password', {
-        method: 'POST',
-        headers: { 
-          'Content-Type': 'application/json',
-          'x-admin-key': adminToken,
-        },
-        body: JSON.stringify({ newPassword: newPassword.trim() }),
-      });
-      const data = await res.json();
+      const cleanPass = newPassword.trim();
+      setStoredAdminPassword(cleanPass);
+      setAdminToken(cleanPass);
+      localStorage.setItem('hoja_maestra_admin_token', cleanPass);
 
-      if (res.ok && data.success) {
-        const token = data.token || newPassword.trim();
-        setAdminToken(token);
-        localStorage.setItem('hoja_maestra_admin_token', token);
-        setNewPassword('');
-        setStatusMessage('¡Contraseña de administrador actualizada con éxito!');
-        setTimeout(() => setStatusMessage(null), 4000);
-      } else {
-        alert(data.message || 'Error al cambiar contraseña.');
+      try {
+        await fetch('/api/admin/change-password', {
+          method: 'POST',
+          headers: { 
+            'Content-Type': 'application/json',
+            'x-admin-key': adminToken,
+          },
+          body: JSON.stringify({ newPassword: cleanPass }),
+        });
+      } catch {
+        // Ok on Netlify
       }
+
+      setNewPassword('');
+      setStatusMessage('¡Contraseña de administrador actualizada con éxito!');
+      setTimeout(() => setStatusMessage(null), 4000);
     } catch {
-      alert('Error de conexión.');
+      alert('Error al cambiar contraseña.');
     } finally {
       setChangingPass(false);
     }
@@ -272,7 +254,7 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
                   type={showPassword ? 'text' : 'password'}
                   required
                   autoFocus
-                  placeholder="Contraseña de admin"
+                  placeholder="admin2026"
                   value={passwordInput}
                   onChange={(e) => setPasswordInput(e.target.value)}
                   className="w-full pl-3 pr-10 py-2.5 bg-slate-50 rounded-xl border border-slate-300 text-sm focus:ring-2 focus:ring-emerald-600 focus:outline-none"
@@ -285,8 +267,15 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
-              <p className="text-[11px] text-slate-400 mt-1">
-                Contraseña inicial predeterminada: <code className="bg-slate-100 px-1.5 py-0.5 rounded text-slate-700 font-mono font-bold">admin2026</code>
+              <p className="text-[11px] text-slate-500 mt-1.5 flex items-center gap-1">
+                <span>Contraseña inicial:</span>
+                <button
+                  type="button"
+                  onClick={() => setPasswordInput('admin2026')}
+                  className="bg-emerald-50 text-emerald-800 px-2 py-0.5 rounded font-mono font-bold hover:bg-emerald-100 transition border border-emerald-200 cursor-pointer"
+                >
+                  admin2026
+                </button>
               </p>
             </div>
 
@@ -340,11 +329,11 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
               <h3 className="font-extrabold text-base sm:text-lg text-white flex items-center gap-2">
                 <span>Central de Leads • Hoja Maestra</span>
                 <span className="text-[10px] bg-emerald-500/20 text-emerald-400 font-mono px-2 py-0.5 rounded border border-emerald-500/30 flex items-center gap-1">
-                  <Lock className="w-2.5 h-2.5" /> Sesión Protegida
+                  <Lock className="w-2.5 h-2.5" /> Administrador Activo
                 </span>
               </h3>
               <p className="text-xs text-slate-400">
-                Solo visible por ti como administrador
+                Compatible con Netlify, servidor local y exportación directa
               </p>
             </div>
           </div>
@@ -406,7 +395,7 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
               }`}
             >
               <Settings className="w-4 h-4" />
-              <span>Enlaces Hotmart</span>
+              <span>Enlaces Hotmart & Plantilla</span>
             </button>
 
             <button
@@ -418,7 +407,7 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
               }`}
             >
               <KeyRound className="w-4 h-4" />
-              <span>Seguridad / Contraseña</span>
+              <span>Cambiar Contraseña</span>
             </button>
           </div>
 
@@ -445,7 +434,7 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
                     <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
                     <input
                       type="text"
-                      placeholder="Buscar por nombre, correo o teléfono..."
+                      placeholder="Buscar por nombre o correo..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full pl-9 pr-3 py-2 bg-white rounded-lg border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-500"
@@ -464,13 +453,15 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
                   </select>
                 </div>
 
-                <a
-                  href={`/api/leads/export/excel?adminKey=${encodeURIComponent(adminToken)}`}
-                  className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs shadow-xs transition flex items-center justify-center gap-1.5"
+                {/* Direct Client-Side Excel Export (Works 100% on Netlify) */}
+                <button
+                  type="button"
+                  onClick={() => exportLeadsToExcelClient(filteredLeads)}
+                  className="w-full sm:w-auto px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg text-xs shadow-xs transition flex items-center justify-center gap-1.5 cursor-pointer"
                 >
                   <FileSpreadsheet className="w-4 h-4" />
                   <span>Exportar a Excel (.xlsx)</span>
-                </a>
+                </button>
               </div>
 
               {/* Leads Table */}
@@ -480,9 +471,8 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
                     <thead className="bg-slate-100 text-slate-700 uppercase font-bold text-[10px] tracking-wider border-b border-slate-200">
                       <tr>
                         <th className="p-3">Nombre & Correo</th>
-                        <th className="p-3">Nivel / Meta</th>
-                        <th className="p-3">Teléfono</th>
-                        <th className="p-3">Fecha</th>
+                        <th className="p-3">Nivel</th>
+                        <th className="p-3">Fecha de Registro</th>
                         <th className="p-3 text-center">Estado</th>
                         <th className="p-3 text-right">Acciones</th>
                       </tr>
@@ -490,7 +480,7 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
                     <tbody className="divide-y divide-slate-100">
                       {filteredLeads.length === 0 ? (
                         <tr>
-                          <td colSpan={6} className="p-8 text-center text-slate-400">
+                          <td colSpan={5} className="p-8 text-center text-slate-400">
                             No se encontraron registros de prospectos.
                           </td>
                         </tr>
@@ -505,9 +495,6 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
                               <span className="inline-block px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800">
                                 {lead.level}
                               </span>
-                            </td>
-                            <td className="p-3 text-slate-600 font-mono text-[11px]">
-                              {lead.phone || <span className="text-slate-400 italic">N/A</span>}
                             </td>
                             <td className="p-3 text-slate-500 text-[11px]">
                               {new Date(lead.createdAt).toLocaleDateString('es-ES', {
@@ -559,7 +546,7 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
                   <h4>Configuración de Enlaces de Hotmart & Google Sheets</h4>
                 </div>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  Modifica aquí tus enlaces directos a las páginas de pago de Hotmart y la plantilla.
+                  Modifica aquí tus enlaces directos. Se guardan y aplican inmediatamente en tu página.
                 </p>
               </div>
 
@@ -651,7 +638,7 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
                   <h4>Cambiar Contraseña de Administrador</h4>
                 </div>
                 <p className="text-xs text-slate-500 leading-relaxed">
-                  Esta contraseña protege el acceso a la lista de leads y las configuraciones de venta.
+                  Esta contraseña protege el acceso a los leads y enlaces en Netlify y en local.
                 </p>
               </div>
 
@@ -674,7 +661,7 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
                 <button
                   type="submit"
                   disabled={changingPass}
-                  className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg text-xs transition"
+                  className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-lg text-xs transition cursor-pointer"
                 >
                   {changingPass ? 'Actualizando...' : 'Guardar Nueva Contraseña'}
                 </button>

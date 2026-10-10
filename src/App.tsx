@@ -12,45 +12,41 @@ import { LegalModals } from './components/LegalModals';
 import { CourseDetailModal } from './components/CourseDetailModal';
 import { AdminDrawer } from './components/AdminDrawer';
 import { AppConfig, CourseLevel, Lead } from './types';
-
-const defaultHojaMaestraConfig: AppConfig = {
-  specialOfferCourseUrl: 'https://go.hotmart.com/A104149092W?dp=1',
-  beginnerCourseUrl: 'https://go.hotmart.com/A103454189R?dp=1',
-  businessCourseUrl: 'https://go.hotmart.com/K104148913I?dp=1',
-  ebookCourseUrl: 'https://go.hotmart.com/G104148965I?dp=1',
-  templateGoogleSheetUrl: 'https://docs.google.com/spreadsheets/d/1ii6AQvG85GPbTCzrLg9RtKfA0Sj9cWXy/edit?gid=996178209#gid=996178209',
-  companyName: 'Hoja Maestra',
-  supportEmail: 'contacto@hojamaestra.com',
-  hotmartGuaranteeDays: 7,
-  templateFileName: 'Plantilla_Finanzas_Personales_Hoja_Maestra.xlsx',
-};
+import { getLocalConfig, saveLocalConfig } from './services/leadStorage';
 
 export default function App() {
-  const [config, setConfig] = useState<AppConfig>(defaultHojaMaestraConfig);
+  const [config, setConfig] = useState<AppConfig>(() => getLocalConfig());
   const [activeLegalModal, setActiveLegalModal] = useState<
     'privacy' | 'terms' | 'refund' | 'cookies' | 'delete-data' | null
   >(null);
   const [activeCourseModal, setActiveCourseModal] = useState<CourseLevel | null>(null);
   const [adminDrawerOpen, setAdminDrawerOpen] = useState<boolean>(false);
 
-  // Fetch initial config from server
+  // Fetch initial config from server (if available) with safe json handling
   useEffect(() => {
     fetch('/api/config')
-      .then((res) => res.json())
+      .then(async (res) => {
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) return null;
+        const text = await res.text();
+        if (text.startsWith('<')) return null;
+        return JSON.parse(text);
+      })
       .then((data) => {
-        if (data.success && data.config) {
-          setConfig((prev) => ({
-            ...prev,
-            ...data.config,
-            specialOfferCourseUrl: data.config.specialOfferCourseUrl || prev.specialOfferCourseUrl,
-            beginnerCourseUrl: data.config.beginnerCourseUrl || prev.beginnerCourseUrl,
-            businessCourseUrl: data.config.businessCourseUrl || prev.businessCourseUrl,
-            ebookCourseUrl: data.config.ebookCourseUrl || prev.ebookCourseUrl,
-            templateGoogleSheetUrl: data.config.templateGoogleSheetUrl || prev.templateGoogleSheetUrl,
-          }));
+        if (data && data.success && data.config) {
+          setConfig((prev) => {
+            const merged = {
+              ...prev,
+              ...data.config,
+            };
+            saveLocalConfig(merged);
+            return merged;
+          });
         }
       })
-      .catch((err) => console.error('Error fetching config:', err));
+      .catch(() => {
+        // Netlify static fallback already loaded from getLocalConfig()!
+      });
   }, []);
 
   // Admin access listeners: '#admin' hash in URL and shortcut Ctrl + Shift + A

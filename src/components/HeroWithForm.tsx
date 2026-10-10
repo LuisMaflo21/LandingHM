@@ -14,6 +14,7 @@ import {
   Sparkles
 } from 'lucide-react';
 import { Lead } from '../types';
+import { registerLeadUnified } from '../services/leadStorage';
 
 interface Props {
   onLeadSuccess: (lead: Lead) => void;
@@ -49,23 +50,12 @@ export function HeroWithForm({ onLeadSuccess, onOpenPrivacy, googleSheetUrl }: P
     setLoading(true);
 
     try {
-      const res = await fetch('/api/leads', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: name.trim(),
-          email: email.trim().toLowerCase(),
-          level: 'intermedio',
-          primaryGoal: 'automatizar',
-          consentPrivacy: true,
-          consentMarketing: true,
-        }),
+      const result = await registerLeadUnified({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        level: 'intermedio',
+        primaryGoal: 'automatizar',
       });
-
-      const data = await res.json();
-      if (!res.ok || !data.success) {
-        throw new Error(data.message || 'Error al procesar el registro.');
-      }
 
       // Celebratory Confetti
       try {
@@ -80,10 +70,10 @@ export function HeroWithForm({ onLeadSuccess, onOpenPrivacy, googleSheetUrl }: P
       }
 
       setIsUnlocked(true);
-      onLeadSuccess(data.lead);
+      onLeadSuccess(result.lead);
 
     } catch (err: unknown) {
-      setErrorMsg(err instanceof Error ? err.message : 'Error al conectar con la base de datos.');
+      setErrorMsg(err instanceof Error ? err.message : 'Error al registrar.');
     } finally {
       setLoading(false);
     }
