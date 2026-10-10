@@ -12,7 +12,8 @@ import { LegalModals } from './components/LegalModals';
 import { CourseDetailModal } from './components/CourseDetailModal';
 import { AdminDrawer } from './components/AdminDrawer';
 import { AppConfig, CourseLevel, Lead } from './types';
-import { getLocalConfig, saveLocalConfig } from './services/leadStorage';
+import { getLocalConfig, saveLocalConfig, getLocalLeads } from './services/leadStorage';
+import { trackPageView, trackTimeSpent, syncLeadsCount } from './services/analytics';
 
 export default function App() {
   const [config, setConfig] = useState<AppConfig>(() => getLocalConfig());
@@ -21,6 +22,22 @@ export default function App() {
   >(null);
   const [activeCourseModal, setActiveCourseModal] = useState<CourseLevel | null>(null);
   const [adminDrawerOpen, setAdminDrawerOpen] = useState<boolean>(false);
+
+  // Initialize analytics & track visitor time on page
+  useEffect(() => {
+    trackPageView();
+    const leads = getLocalLeads();
+    syncLeadsCount(leads.length);
+
+    // Track active time every 10 seconds while tab is visible
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        trackTimeSpent(10);
+      }
+    }, 10000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Fetch initial config from server (if available) with safe json handling
   useEffect(() => {

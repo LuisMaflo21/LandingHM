@@ -20,6 +20,7 @@ if (!fs.existsSync(DATA_DIR)) {
 
 const LEADS_FILE = path.join(DATA_DIR, 'leads.json');
 const CONFIG_FILE = path.join(DATA_DIR, 'config.json');
+const ANALYTICS_FILE = path.join(DATA_DIR, 'analytics.json');
 
 // Initial defaults
 interface Lead {
@@ -171,6 +172,26 @@ function readConfig(): AppConfig {
 
 function writeConfig(cfg: AppConfig) {
   fs.writeFileSync(CONFIG_FILE, JSON.stringify(cfg, null, 2), 'utf8');
+}
+
+function readAnalytics(): any {
+  try {
+    if (!fs.existsSync(ANALYTICS_FILE)) {
+      return null;
+    }
+    const data = fs.readFileSync(ANALYTICS_FILE, 'utf8');
+    return JSON.parse(data);
+  } catch {
+    return null;
+  }
+}
+
+function writeAnalytics(data: any) {
+  try {
+    fs.writeFileSync(ANALYTICS_FILE, JSON.stringify(data, null, 2), 'utf8');
+  } catch (err) {
+    console.error('Error writing analytics:', err);
+  }
 }
 
 // Function to generate the Excel workbook buffer
@@ -498,6 +519,20 @@ app.get('/api/leads/export/excel', (req: Request, res: Response) => {
     'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
   );
   res.send(buf);
+});
+
+// 9. Analytics endpoints
+app.get('/api/analytics', (_req: Request, res: Response) => {
+  const analytics = readAnalytics();
+  res.json({ success: true, analytics });
+});
+
+app.post('/api/analytics/sync', (req: Request, res: Response) => {
+  const clientAnalytics = req.body;
+  if (clientAnalytics) {
+    writeAnalytics(clientAnalytics);
+  }
+  res.json({ success: true, message: 'Métricas sincronizadas.' });
 });
 
 // Setup Vite middleware for dev or serve dist in prod

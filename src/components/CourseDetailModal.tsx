@@ -1,5 +1,6 @@
 import { X, BookOpen, Clock, Check, ArrowRight, ShieldCheck } from 'lucide-react';
 import { CourseLevel, AppConfig } from '../types';
+import { trackCourseClick } from '../services/analytics';
 
 interface Props {
   course: CourseLevel | null;
@@ -103,6 +104,16 @@ export function CourseDetailModal({ course, onClose }: Props) {
               href={url}
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => {
+                const targetId = course.id === 'oferta-5' 
+                  ? 'offer5Usd' 
+                  : course.id === 'principiantes' 
+                  ? 'beginner' 
+                  : course.id === 'empresarial' 
+                  ? 'business' 
+                  : 'ebook';
+                trackCourseClick(targetId);
+              }}
               className="flex-1 sm:flex-initial px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs sm:text-sm shadow-md transition flex items-center justify-center gap-2"
             >
               <span>Inscribirme con Descuento</span>

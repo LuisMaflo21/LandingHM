@@ -1,6 +1,7 @@
 import { Check, ArrowRight, ShieldCheck, Sparkles, BookOpen, ExternalLink } from 'lucide-react';
 import { AppConfig, CourseLevel } from '../types';
 import { coursesData } from '../data/coursesData';
+import { trackCourseClick } from '../services/analytics';
 
 interface Props {
   config: AppConfig;
@@ -65,6 +66,7 @@ export function CoursesGridSimple({ config, onOpenDetails }: Props) {
                   href={config.specialOfferCourseUrl || offerCourse.hotmartUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => trackCourseClick('offer5Usd')}
                   className="inline-flex items-center gap-2 px-7 py-3.5 bg-amber-400 hover:bg-amber-300 active:bg-amber-500 text-slate-950 font-black rounded-xl text-sm transition shadow-lg transform hover:scale-105"
                 >
                   <span>Inscribirme por solo $5 USD</span>
@@ -118,6 +120,7 @@ export function CoursesGridSimple({ config, onOpenDetails }: Props) {
                   href={config.beginnerCourseUrl || beginnerCourse.hotmartUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => trackCourseClick('beginner')}
                   className="w-full py-2.5 px-4 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-xs"
                 >
                   <span>Ver Curso Principiantes</span>
@@ -172,6 +175,7 @@ export function CoursesGridSimple({ config, onOpenDetails }: Props) {
                   href={config.businessCourseUrl || businessCourse.hotmartUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => trackCourseClick('business')}
                   className="w-full py-2.5 px-4 bg-emerald-700 hover:bg-emerald-600 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-xs"
                 >
                   <span>Ver Excel Empresarial</span>
@@ -223,6 +227,7 @@ export function CoursesGridSimple({ config, onOpenDetails }: Props) {
                   href={config.ebookCourseUrl || ebookCourse.hotmartUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => trackCourseClick('ebook')}
                   className="w-full py-2.5 px-4 bg-slate-900 hover:bg-slate-800 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-1.5 transition shadow-xs"
                 >
                   <span>Obtener Ebook de Excel</span>

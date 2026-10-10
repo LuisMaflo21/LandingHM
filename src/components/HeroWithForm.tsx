@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { Lead } from '../types';
 import { registerLeadUnified } from '../services/leadStorage';
+import { trackTemplateClick } from '../services/analytics';
 
 interface Props {
   onLeadSuccess: (lead: Lead) => void;
@@ -70,6 +71,7 @@ export function HeroWithForm({ onLeadSuccess, onOpenPrivacy, googleSheetUrl }: P
       }
 
       setIsUnlocked(true);
+      trackTemplateClick('ctaUnlock');
       onLeadSuccess(result.lead);
 
     } catch (err: unknown) {
@@ -241,6 +243,7 @@ export function HeroWithForm({ onLeadSuccess, onOpenPrivacy, googleSheetUrl }: P
                   href={googleSheetUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => trackTemplateClick('googleSheets')}
                   className="flex-1 py-3.5 px-5 bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white font-extrabold rounded-xl text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer transform hover:scale-[1.02]"
                 >
                   <ExternalLink className="w-4 h-4" />
@@ -251,6 +254,7 @@ export function HeroWithForm({ onLeadSuccess, onOpenPrivacy, googleSheetUrl }: P
                   href={directExcelExportUrl}
                   target="_blank"
                   rel="noopener noreferrer"
+                  onClick={() => trackTemplateClick('excelDownload')}
                   className="flex-1 py-3.5 px-5 bg-slate-900 hover:bg-slate-800 text-white font-extrabold rounded-xl text-sm shadow-md transition flex items-center justify-center gap-2 cursor-pointer transform hover:scale-[1.02]"
                 >
                   <Download className="w-4 h-4 text-emerald-400" />
