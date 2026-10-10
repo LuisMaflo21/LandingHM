@@ -1,0 +1,17 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Leads collection: Public landing page visitors can create/register new leads
+    // Leads can be read/listed or updated by anyone knowing the admin panel (or open for app administration)
+    match /leads/{leadId} {
+      allow create: if request.resource.data.keys().hasAll(['name', 'email']);
+      allow read, update, delete: if true;
+    }
+
+    // System configuration (admin password, course URLs)
+    match /system/{documentId} {
+      allow read, write: if true;
+    }
+  }
+}

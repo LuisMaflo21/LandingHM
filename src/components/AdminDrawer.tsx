@@ -41,7 +41,8 @@ import {
   deleteLeadUnified, 
   exportLeadsToExcelClient,
   saveLocalConfig,
-  setStoredAdminPassword
+  setStoredAdminPassword,
+  updateAdminPasswordUnified
 } from '../services/leadStorage';
 import { 
   getAnalyticsMetrics, 
@@ -227,7 +228,7 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
     setChangingPass(true);
     try {
       const cleanPass = newPassword.trim();
-      setStoredAdminPassword(cleanPass);
+      await updateAdminPasswordUnified(cleanPass);
       setAdminToken(cleanPass);
       localStorage.setItem('hoja_maestra_admin_token', cleanPass);
 

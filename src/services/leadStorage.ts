@@ -1,4 +1,6 @@
 import * as XLSX from 'xlsx';
+import { doc, getDoc, setDoc, getDocs, collection, deleteDoc } from 'firebase/firestore';
+import { db } from './firebase';
 import { Lead, AppConfig } from '../types';
 
 const LEADS_STORAGE_KEY = 'hoja_maestra_leads_db';
@@ -137,7 +139,11 @@ export function setStoredAdminPassword(pass: string) {
   }
 }
 
-// Unified Lead Registration: works on BOTH Express backend AND Netlify static hosting!
+// ==========================================
+// FIREBASE PERSISTENCE INTEGRATION
+// ==========================================
+
+// Register lead with guaranteed multi-layer persistence (Firebase Firestore + LocalStorage + Backend API)
 export async function registerLeadUnified(data: {
   name: string;
   email: string;
@@ -147,10 +153,11 @@ export async function registerLeadUnified(data: {
 }): Promise<{ success: boolean; lead: Lead }> {
   const normalizedEmail = data.email.trim().toLowerCase();
   const now = new Date().toISOString();
+  const leadId = `lead_${Date.now()}_${Math.floor(Math.random() * 1000)}`;
 
   // Prepare lead object
   const newLead: Lead = {
-    id: `lead_${Date.now()}_${Math.floor(Math.random() * 1000)}`,
+    id: leadId,
     name: data.name.trim(),
     email: normalizedEmail,
     phone: data.phone?.trim() || undefined,
@@ -169,7 +176,17 @@ export async function registerLeadUnified(data: {
     },
   };
 
-  // 1. Always save in localStorage so it persists on Netlify
+  // 1. Save in Firebase Firestore
+  try {
+    await setDoc(doc(db, 'leads', leadId), {
+      ...newLead,
+      updatedAt: now,
+    });
+  } catch (err) {
+    console.warn('Could not save lead directly to Firestore (fallback enabled):', err);
+  }
+
+  // 2. Save in localStorage (instant offline and static fallback)
   const currentLeads = getLocalLeads();
   const existingIdx = currentLeads.findIndex((l) => l.email === normalizedEmail);
   if (existingIdx >= 0) {
@@ -184,7 +201,7 @@ export async function registerLeadUnified(data: {
   }
   saveLocalLeads(currentLeads);
 
-  // 2. Also attempt server sync if backend API exists
+  // 3. Sync with Express backend if running
   try {
     const res = await fetch('/api/leads', {
       method: 'POST',
@@ -196,17 +213,39 @@ export async function registerLeadUnified(data: {
       return { success: true, lead: parsed.data.lead };
     }
   } catch {
-    // If backend is not available (e.g. Netlify static hosting), the local save already succeeded!
+    // Non-blocking fallback
   }
 
   return { success: true, lead: newLead };
 }
 
-// Unified Admin Authentication: works on BOTH Express AND Netlify
+// Admin Authentication with Firebase Cloud check + Local storage + Server
 export async function verifyAdminPassword(password: string): Promise<{ success: boolean; token: string }> {
   const cleanPass = password.trim();
 
-  // 1. Try server verification first
+  // 1. Try Firebase Firestore system/config check
+  try {
+    const snap = await getDoc(doc(db, 'system', 'config'));
+    if (snap.exists()) {
+      const cloudData = snap.data();
+      if (cloudData?.adminPassword) {
+        if (cleanPass === cloudData.adminPassword) {
+          setStoredAdminPassword(cleanPass);
+          return { success: true, token: cleanPass };
+        }
+      }
+    } else {
+      // Initialize system config in Firebase with default admin pass
+      await setDoc(doc(db, 'system', 'config'), {
+        adminPassword: DEFAULT_ADMIN_PASS,
+        updatedAt: new Date().toISOString(),
+      }, { merge: true });
+    }
+  } catch (err) {
+    console.warn('Firestore admin check skipped:', err);
+  }
+
+  // 2. Try server verification if backend is running
   try {
     const res = await fetch('/api/admin/login', {
       method: 'POST',
@@ -219,10 +258,10 @@ export async function verifyAdminPassword(password: string): Promise<{ success: 
       return { success: true, token: parsed.data.token || cleanPass };
     }
   } catch {
-    // Server unavailable / Netlify static hosting
+    // Server unavailable / static deployment
   }
 
-  // 2. Static / Netlify verification against stored password or default 'admin2026'
+  // 3. Fallback to localStorage or default password
   const expected = getStoredAdminPassword();
   if (cleanPass === expected || cleanPass === DEFAULT_ADMIN_PASS) {
     setStoredAdminPassword(cleanPass);
@@ -232,15 +271,32 @@ export async function verifyAdminPassword(password: string): Promise<{ success: 
   return { success: false, token: '' };
 }
 
-// Unified Get Leads: fetches from server or falls back to localStorage
+// Fetch leads from Firebase Firestore, server API, or localStorage
 export async function fetchLeadsUnified(adminToken: string): Promise<Lead[]> {
+  // 1. Try Firebase Firestore
+  try {
+    const snapshot = await getDocs(collection(db, 'leads'));
+    if (!snapshot.empty) {
+      const firestoreLeads: Lead[] = [];
+      snapshot.forEach((d) => {
+        firestoreLeads.push(d.data() as Lead);
+      });
+      // Sort newest first
+      firestoreLeads.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      saveLocalLeads(firestoreLeads);
+      return firestoreLeads;
+    }
+  } catch (err) {
+    console.warn('Firestore fetch leads error, falling back:', err);
+  }
+
+  // 2. Try backend API
   try {
     const res = await fetch('/api/leads', {
       headers: { 'x-admin-key': adminToken },
     });
     const parsed = await safeJsonParse(res);
     if (parsed.isJson && parsed.data?.success && Array.isArray(parsed.data.leads)) {
-      // Sync local storage with server
       saveLocalLeads(parsed.data.leads);
       return parsed.data.leads;
     }
@@ -253,14 +309,21 @@ export async function fetchLeadsUnified(adminToken: string): Promise<Lead[]> {
 
 // Delete Lead Unified
 export async function deleteLeadUnified(idOrEmail: string, adminToken: string): Promise<boolean> {
-  // Update local storage
+  // 1. Delete from Firebase Firestore
+  try {
+    await deleteDoc(doc(db, 'leads', idOrEmail));
+  } catch (err) {
+    console.warn('Error deleting lead from Firestore:', err);
+  }
+
+  // 2. Update local storage
   const leads = getLocalLeads();
   const filtered = leads.filter(
     (l) => l.id !== idOrEmail && l.email.toLowerCase() !== idOrEmail.toLowerCase()
   );
   saveLocalLeads(filtered);
 
-  // Try server sync
+  // 3. Try server sync
   try {
     await fetch(`/api/leads/${encodeURIComponent(idOrEmail)}`, {
       method: 'DELETE',
@@ -273,7 +336,24 @@ export async function deleteLeadUnified(idOrEmail: string, adminToken: string): 
   return true;
 }
 
-// Client-Side Excel Export: Works 100% on Netlify, Android, iOS, Windows, Mac!
+// Update admin password in Firebase Firestore + LocalStorage
+export async function updateAdminPasswordUnified(newPassword: string): Promise<boolean> {
+  const cleanPass = newPassword.trim();
+  setStoredAdminPassword(cleanPass);
+
+  try {
+    await setDoc(doc(db, 'system', 'config'), {
+      adminPassword: cleanPass,
+      updatedAt: new Date().toISOString(),
+    }, { merge: true });
+  } catch (err) {
+    console.warn('Could not persist new password to Firebase:', err);
+  }
+
+  return true;
+}
+
+// Client-Side Excel Export
 export function exportLeadsToExcelClient(leads: Lead[]) {
   const data = leads.map((l) => ({
     ID: l.id,

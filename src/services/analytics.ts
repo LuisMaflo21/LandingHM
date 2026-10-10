@@ -1,4 +1,6 @@
 import * as XLSX from 'xlsx';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { db } from './firebase';
 
 const ANALYTICS_STORAGE_KEY = 'hoja_maestra_analytics_db';
 const SESSION_STORAGE_KEY = 'hoja_maestra_session_active';
@@ -169,6 +171,18 @@ export function saveAnalyticsMetrics(metrics: AnalyticsMetrics) {
     metrics.lastUpdated = new Date().toISOString();
 
     localStorage.setItem(ANALYTICS_STORAGE_KEY, JSON.stringify(metrics));
+
+    // Persist metrics in Firebase Firestore in real-time
+    try {
+      setDoc(doc(db, 'system', 'metrics'), {
+        ...metrics,
+        savedAt: new Date().toISOString(),
+      }, { merge: true }).catch((fbErr) => {
+        console.warn('Firebase metrics sync warning:', fbErr);
+      });
+    } catch {
+      // Non-blocking
+    }
 
     // Optional background sync with server if available
     try {

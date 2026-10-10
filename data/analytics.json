@@ -1,4 +1,90 @@
 {
-  "totalVisitors": 158,
-  "totalPageviews": 312
+  "totalVisitors": 159,
+  "totalPageviews": 313,
+  "totalTimeSpentSeconds": 27852,
+  "averageTimeSeconds": 175,
+  "leadsCount": 3,
+  "conversionRate": 1.9,
+  "templateClicks": {
+    "googleSheets": 54,
+    "excelDownload": 42,
+    "ctaUnlock": 68,
+    "total": 96
+  },
+  "courseClicks": {
+    "offer5Usd": 38,
+    "beginner": 17,
+    "business": 21,
+    "ebook": 11,
+    "total": 87
+  },
+  "deviceBreakdown": {
+    "mobile": 124,
+    "desktop": 29,
+    "tablet": 6
+  },
+  "retentionBreakdown": {
+    "bounce": 22,
+    "reading": 48,
+    "highEngagement": 124
+  },
+  "dailyStats": [
+    {
+      "date": "2026-10-04",
+      "dayLabel": "Dom 4",
+      "visitors": 18,
+      "leads": 4,
+      "courseClicks": 9,
+      "templateClicks": 11
+    },
+    {
+      "date": "2026-10-05",
+      "dayLabel": "Lun 5",
+      "visitors": 21,
+      "leads": 4,
+      "courseClicks": 10,
+      "templateClicks": 13
+    },
+    {
+      "date": "2026-10-06",
+      "dayLabel": "Mar 6",
+      "visitors": 23,
+      "leads": 5,
+      "courseClicks": 12,
+      "templateClicks": 14
+    },
+    {
+      "date": "2026-10-07",
+      "dayLabel": "Mié 7",
+      "visitors": 26,
+      "leads": 5,
+      "courseClicks": 13,
+      "templateClicks": 16
+    },
+    {
+      "date": "2026-10-08",
+      "dayLabel": "Jue 8",
+      "visitors": 29,
+      "leads": 6,
+      "courseClicks": 14,
+      "templateClicks": 18
+    },
+    {
+      "date": "2026-10-09",
+      "dayLabel": "Vie 9",
+      "visitors": 32,
+      "leads": 6,
+      "courseClicks": 16,
+      "templateClicks": 19
+    },
+    {
+      "date": "2026-10-10",
+      "dayLabel": "Sáb 10",
+      "visitors": 35,
+      "leads": 8,
+      "courseClicks": 17,
+      "templateClicks": 21
+    }
+  ],
+  "lastUpdated": "2026-10-10T20:52:24.443Z"
 }

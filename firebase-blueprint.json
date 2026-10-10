@@ -1,0 +1,147 @@
+{
+  "entities": {
+    "Lead": {
+      "title": "Lead",
+      "description": "Lead registered via the landing page form to unlock template downloads",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the lead"
+        },
+        "name": {
+          "type": "string",
+          "description": "Full name of the user"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Email address of the user"
+        },
+        "phone": {
+          "type": "string",
+          "description": "Optional phone or WhatsApp contact number"
+        },
+        "level": {
+          "type": "string",
+          "enum": ["basico", "intermedio", "avanzado"],
+          "description": "Self-reported Excel skill level"
+        },
+        "primaryGoal": {
+          "type": "string",
+          "description": "Main goal of the user"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp when lead was created"
+        },
+        "downloads": {
+          "type": "number",
+          "description": "Number of times the download link was clicked"
+        },
+        "status": {
+          "type": "string",
+          "description": "Status of the lead"
+        }
+      },
+      "required": ["id", "name", "email", "createdAt"]
+    },
+    "AppConfig": {
+      "title": "AppConfig",
+      "description": "Application settings including Hotmart affiliate URLs and admin security",
+      "type": "object",
+      "properties": {
+        "adminPassword": {
+          "type": "string",
+          "description": "Secret administrative password to access leads and metrics"
+        },
+        "specialOfferCourseUrl": {
+          "type": "string",
+          "description": "Hotmart checkout URL for $5 USD special course"
+        },
+        "beginnerCourseUrl": {
+          "type": "string",
+          "description": "Hotmart checkout URL for Beginners Excel course"
+        },
+        "businessCourseUrl": {
+          "type": "string",
+          "description": "Hotmart checkout URL for Business Excel course"
+        },
+        "ebookCourseUrl": {
+          "type": "string",
+          "description": "Hotmart checkout URL for Excel Ebook"
+        },
+        "templateGoogleSheetUrl": {
+          "type": "string",
+          "description": "Direct Google Sheets template URL"
+        },
+        "companyName": {
+          "type": "string",
+          "description": "Company name"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Last updated timestamp"
+        }
+      },
+      "required": ["adminPassword"]
+    },
+    "AnalyticsMetrics": {
+      "title": "AnalyticsMetrics",
+      "description": "Aggregated visitor and conversion metrics",
+      "type": "object",
+      "properties": {
+        "totalVisitors": {
+          "type": "number",
+          "description": "Total unique visitors count"
+        },
+        "totalPageviews": {
+          "type": "number",
+          "description": "Total page impressions"
+        },
+        "deviceBreakdown": {
+          "type": "object",
+          "description": "Breakdown by mobile, desktop, tablet"
+        },
+        "templateClicks": {
+          "type": "object",
+          "description": "Breakdown of clicks on template links"
+        },
+        "courseClicks": {
+          "type": "object",
+          "description": "Breakdown of clicks on Hotmart courses"
+        },
+        "totalTimeSpentSeconds": {
+          "type": "number",
+          "description": "Total time spent across sessions"
+        },
+        "averageTimeSeconds": {
+          "type": "number",
+          "description": "Average duration per visit"
+        },
+        "lastUpdated": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Timestamp of last update"
+        }
+      },
+      "required": ["totalVisitors", "totalPageviews"]
+    }
+  },
+  "firestore": {
+    "/leads/{leadId}": {
+      "schema": "Lead",
+      "description": "Collection of all submitted leads"
+    },
+    "/system/config": {
+      "schema": "AppConfig",
+      "description": "Global application configuration and admin credentials"
+    },
+    "/system/metrics": {
+      "schema": "AnalyticsMetrics",
+      "description": "Live traffic and analytics metrics"
+    }
+  }
+}

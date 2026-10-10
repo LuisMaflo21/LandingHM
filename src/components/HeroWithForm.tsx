@@ -216,6 +216,31 @@ export function HeroWithForm({ onLeadSuccess, onOpenPrivacy, googleSheetUrl }: P
                   </button>
                   .
                 </p>
+
+                {/* Big, eye-catching Callout for Online Course Offers */}
+                <div className="pt-3 border-t border-slate-200">
+                  <a
+                    href="#cursos"
+                    className="group flex flex-col sm:flex-row items-center justify-between gap-2 p-3 sm:p-3.5 bg-gradient-to-r from-emerald-900 via-emerald-800 to-slate-900 hover:from-emerald-800 hover:to-slate-800 text-white rounded-xl shadow-md transition-all duration-200 transform hover:scale-[1.01]"
+                  >
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-8 h-8 rounded-lg bg-amber-400 text-slate-950 flex items-center justify-center font-black text-sm shrink-0 shadow-xs">
+                        $5
+                      </div>
+                      <div className="text-left">
+                        <span className="text-[11px] font-bold text-amber-300 uppercase tracking-wider block">
+                          🔥 Descuento Especial Disponible
+                        </span>
+                        <span className="text-sm sm:text-base font-extrabold text-white tracking-tight">
+                          Ver Oferta de Cursos Online de Excel
+                        </span>
+                      </div>
+                    </div>
+                    <span className="text-xs font-bold text-emerald-200 group-hover:text-white flex items-center gap-1 shrink-0 bg-white/10 px-3 py-1 rounded-lg">
+                      Ver Ofertas ↓
+                    </span>
+                  </a>
+                </div>
               </form>
             </div>
           ) : (
@@ -279,12 +304,28 @@ export function HeroWithForm({ onLeadSuccess, onOpenPrivacy, googleSheetUrl }: P
                 </a>
               </div>
 
-              <div className="pt-2">
+              {/* Big prominent Course Offer callout for unlocked visitors */}
+              <div className="pt-3 border-t border-emerald-200">
                 <a
                   href="#cursos"
-                  className="text-xs text-slate-500 hover:text-slate-800 underline"
+                  className="group flex flex-col sm:flex-row items-center justify-between gap-3 p-4 bg-gradient-to-r from-emerald-800 via-emerald-700 to-slate-900 hover:from-emerald-700 hover:to-slate-800 text-white rounded-xl shadow-lg transition-all duration-200 transform hover:scale-[1.01]"
                 >
-                  Ver cursos de Excel en oferta especial &darr;
+                  <div className="flex items-center gap-3 text-left">
+                    <span className="px-2.5 py-1 bg-amber-400 text-slate-950 font-black text-xs rounded-lg uppercase tracking-wider">
+                      OFERTA FLASH
+                    </span>
+                    <div>
+                      <p className="text-base sm:text-lg font-black text-white">
+                        Ver Oferta de Cursos Online de Excel &darr;
+                      </p>
+                      <p className="text-xs text-emerald-100">
+                        Cursos desde $5 USD con garantía de 7 días de Hotmart
+                      </p>
+                    </div>
+                  </div>
+                  <span className="px-4 py-2 bg-emerald-500 hover:bg-emerald-400 text-white font-extrabold text-xs rounded-lg shadow-sm shrink-0">
+                    Explorar Cursos ↓
+                  </span>
                 </a>
               </div>
             </div>

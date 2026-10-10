@@ -14,6 +14,7 @@ import { AdminDrawer } from './components/AdminDrawer';
 import { AppConfig, CourseLevel, Lead } from './types';
 import { getLocalConfig, saveLocalConfig, getLocalLeads } from './services/leadStorage';
 import { trackPageView, trackTimeSpent, syncLeadsCount } from './services/analytics';
+import { testFirestoreConnection } from './services/firebase';
 
 export default function App() {
   const [config, setConfig] = useState<AppConfig>(() => getLocalConfig());
@@ -25,6 +26,7 @@ export default function App() {
 
   // Initialize analytics & track visitor time on page
   useEffect(() => {
+    testFirestoreConnection();
     trackPageView();
     const leads = getLocalLeads();
     syncLeadsCount(leads.length);

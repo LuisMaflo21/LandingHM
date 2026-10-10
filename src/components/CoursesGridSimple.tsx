@@ -20,15 +20,15 @@ export function CoursesGridSimple({ config, onOpenDetails }: Props) {
       <div className="max-w-5xl mx-auto px-4 sm:px-6">
         
         {/* Section Header */}
-        <div className="text-center max-w-2xl mx-auto mb-12">
-          <span className="text-xs font-bold text-emerald-800 uppercase tracking-wider bg-emerald-100 px-3 py-1 rounded-full border border-emerald-200">
-            Cursos & Recursos • Hoja Maestra
+        <div className="text-center max-w-3xl mx-auto mb-12">
+          <span className="text-xs sm:text-sm font-extrabold text-emerald-800 uppercase tracking-wider bg-emerald-100 px-4 py-1.5 rounded-full border border-emerald-300 shadow-xs inline-block mb-3">
+            OFERTA ESPECIAL • CURSOS ONLINE DE EXCEL
           </span>
-          <h2 className="text-2xl sm:text-4xl font-extrabold text-slate-900 mt-3">
-            Elige el programa perfecto para tu nivel
+          <h2 className="text-3xl sm:text-5xl font-black text-slate-900 tracking-tight leading-tight">
+            Oferta de Cursos Online de Excel
           </h2>
-          <p className="text-xs sm:text-sm text-slate-600 mt-2">
-            Aprende a tu ritmo con acceso de por vida y la garantía incondicional de 7 días de Hotmart.
+          <p className="text-sm sm:text-base text-slate-600 mt-3 font-medium">
+            Programas 100% prácticos desde <strong>$5 USD</strong> con acceso de por vida y garantía incondicional de 7 días respaldada por Hotmart.
           </p>
         </div>
 
