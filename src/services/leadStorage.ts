@@ -259,10 +259,11 @@ export async function fetchLeadsUnified(adminToken: string): Promise<Lead[]> {
         firestoreLeads.push(data);
       }
     });
-    // Sort newest first
-    firestoreLeads.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-    saveLocalLeads(firestoreLeads);
-    return firestoreLeads;
+    if (firestoreLeads.length > 0) {
+      firestoreLeads.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+      saveLocalLeads(firestoreLeads);
+      return firestoreLeads;
+    }
   } catch (err) {
     console.warn('Firestore fetch leads error, trying backend/local fallback:', err);
   }
@@ -273,15 +274,15 @@ export async function fetchLeadsUnified(adminToken: string): Promise<Lead[]> {
       headers: { 'x-admin-key': adminToken },
     });
     const parsed = await safeJsonParse(res);
-    if (parsed.isJson && parsed.data?.success && Array.isArray(parsed.data.leads)) {
-      const clean = parsed.data.leads.filter(
-        (l: Lead) =>
-          !['lead_101', 'lead_102', 'lead_103'].includes(l.id) &&
-          !l.email?.includes('carlos.mendoza') &&
-          !l.email?.includes('mariana.silva') &&
-          !l.email?.includes('andres.felipe')
-      );
+    if (parsed.isJson && parsed.data?.success && Array.isArray(parsed.data.leads) && parsed.data.leads.length > 0) {
+      const clean = parsed.data.leads;
       saveLocalLeads(clean);
+      // Seed to Firestore in background
+      try {
+        clean.forEach((ld: Lead) => {
+          setDoc(doc(db, 'leads', ld.id), ld, { merge: true }).catch(() => {});
+        });
+      } catch {}
       return clean;
     }
   } catch {

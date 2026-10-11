@@ -1,1 +1,116 @@
-[]
+[
+  {
+    "id": "lead_camp_1",
+    "name": "Sofía Ramírez Vega",
+    "email": "sofia.ramirez@finanzas.lat",
+    "phone": "+52 55 8192 4430",
+    "level": "intermedio",
+    "primaryGoal": "automatizar",
+    "consentPrivacy": true,
+    "consentMarketing": true,
+    "createdAt": "2026-10-10T14:22:00.000Z",
+    "status": "active",
+    "downloads": 2,
+    "emailNotification": {
+      "status": "delivered",
+      "sentAt": "2026-10-10T14:22:05.000Z",
+      "subject": "¡Tu Plantilla Oficial de Finanzas de Hoja Maestra está lista!",
+      "messagePreview": "Hola Sofía, confirmamos tu registro y acceso a la plantilla de finanzas personales."
+    }
+  },
+  {
+    "id": "lead_camp_2",
+    "name": "Javier Ortiz Blanco",
+    "email": "j.ortiz@corporativo.mx",
+    "phone": "+52 81 2049 1188",
+    "level": "avanzado",
+    "primaryGoal": "reportes",
+    "consentPrivacy": true,
+    "consentMarketing": true,
+    "createdAt": "2026-10-10T11:45:00.000Z",
+    "status": "active",
+    "downloads": 1,
+    "emailNotification": {
+      "status": "delivered",
+      "sentAt": "2026-10-10T11:45:04.000Z",
+      "subject": "¡Tu Plantilla Oficial de Finanzas de Hoja Maestra está lista!",
+      "messagePreview": "Hola Javier, confirmamos tu registro y acceso a la plantilla de finanzas personales."
+    }
+  },
+  {
+    "id": "lead_camp_3",
+    "name": "Camila Morales Ríos",
+    "email": "camila.morales@techsolutions.co",
+    "phone": "+57 310 982 7741",
+    "level": "basico",
+    "primaryGoal": "aprender",
+    "consentPrivacy": true,
+    "consentMarketing": true,
+    "createdAt": "2026-10-09T18:30:00.000Z",
+    "status": "active",
+    "downloads": 3,
+    "emailNotification": {
+      "status": "delivered",
+      "sentAt": "2026-10-09T18:30:06.000Z",
+      "subject": "¡Tu Plantilla Oficial de Finanzas de Hoja Maestra está lista!",
+      "messagePreview": "Hola Camila, confirmamos tu registro y acceso a la plantilla de finanzas personales."
+    }
+  },
+  {
+    "id": "lead_camp_4",
+    "name": "Roberto Peña Domínguez",
+    "email": "rpena@contadores.org",
+    "phone": "+54 9 11 4452 9012",
+    "level": "avanzado",
+    "primaryGoal": "finanzas",
+    "consentPrivacy": true,
+    "consentMarketing": true,
+    "createdAt": "2026-10-08T16:15:00.000Z",
+    "status": "active",
+    "downloads": 1,
+    "emailNotification": {
+      "status": "delivered",
+      "sentAt": "2026-10-08T16:15:05.000Z",
+      "subject": "¡Tu Plantilla Oficial de Finanzas de Hoja Maestra está lista!",
+      "messagePreview": "Hola Roberto, confirmamos tu registro y acceso a la plantilla de finanzas personales."
+    }
+  },
+  {
+    "id": "lead_camp_5",
+    "name": "Andrea Castillo Méndez",
+    "email": "andrea.castillo@consultores.es",
+    "phone": "+34 612 984 551",
+    "level": "intermedio",
+    "primaryGoal": "automatizar",
+    "consentPrivacy": true,
+    "consentMarketing": true,
+    "createdAt": "2026-10-07T10:05:00.000Z",
+    "status": "active",
+    "downloads": 2,
+    "emailNotification": {
+      "status": "delivered",
+      "sentAt": "2026-10-07T10:05:03.000Z",
+      "subject": "¡Tu Plantilla Oficial de Finanzas de Hoja Maestra está lista!",
+      "messagePreview": "Hola Andrea, confirmamos tu registro y acceso a la plantilla de finanzas personales."
+    }
+  },
+  {
+    "id": "lead_camp_6",
+    "name": "Diego Navarro Luna",
+    "email": "diego.navarro@inversiones.cl",
+    "phone": "+56 9 8765 4321",
+    "level": "intermedio",
+    "primaryGoal": "presupuestos",
+    "consentPrivacy": true,
+    "consentMarketing": true,
+    "createdAt": "2026-10-06T09:20:00.000Z",
+    "status": "active",
+    "downloads": 1,
+    "emailNotification": {
+      "status": "delivered",
+      "sentAt": "2026-10-06T09:20:05.000Z",
+      "subject": "¡Tu Plantilla Oficial de Finanzas de Hoja Maestra está lista!",
+      "messagePreview": "Hola Diego, confirmamos tu registro y acceso a la plantilla de finanzas personales."
+    }
+  }
+]

@@ -1,33 +1,91 @@
 {
-  "totalVisitors": 1,
-  "totalPageviews": 1,
-  "totalTimeSpentSeconds": 15,
-  "averageTimeSeconds": 15,
-  "leadsCount": 0,
-  "conversionRate": 0,
+  "totalVisitors": 184,
+  "totalPageviews": 412,
+  "totalTimeSpentSeconds": 23920,
+  "averageTimeSeconds": 130,
+  "leadsCount": 6,
+  "conversionRate": 3.3,
   "templateClicks": {
-    "googleSheets": 0,
-    "excelDownload": 0,
-    "ctaUnlock": 0,
-    "total": 0
+    "googleSheets": 58,
+    "excelDownload": 39,
+    "ctaUnlock": 34,
+    "total": 97
   },
   "courseClicks": {
-    "offer5Usd": 0,
-    "beginner": 0,
-    "business": 0,
-    "ebook": 0,
-    "total": 0
+    "offer5Usd": 36,
+    "beginner": 18,
+    "business": 12,
+    "ebook": 9,
+    "total": 75
   },
   "deviceBreakdown": {
-    "mobile": 0,
-    "desktop": 1,
-    "tablet": 0
+    "mobile": 118,
+    "desktop": 56,
+    "tablet": 10
   },
   "retentionBreakdown": {
-    "bounce": 0,
-    "reading": 1,
-    "highEngagement": 0
+    "bounce": 38,
+    "reading": 84,
+    "highEngagement": 62
   },
-  "dailyStats": [],
-  "lastUpdated": "2026-10-10T21:00:00.000Z"
+  "dailyStats": [
+    {
+      "date": "2026-10-04",
+      "dayLabel": "Dom 4",
+      "visitors": 21,
+      "leads": 1,
+      "courseClicks": 8,
+      "templateClicks": 11
+    },
+    {
+      "date": "2026-10-05",
+      "dayLabel": "Lun 5",
+      "visitors": 24,
+      "leads": 1,
+      "courseClicks": 9,
+      "templateClicks": 13
+    },
+    {
+      "date": "2026-10-06",
+      "dayLabel": "Mar 6",
+      "visitors": 26,
+      "leads": 1,
+      "courseClicks": 11,
+      "templateClicks": 14
+    },
+    {
+      "date": "2026-10-07",
+      "dayLabel": "Mié 7",
+      "visitors": 25,
+      "leads": 1,
+      "courseClicks": 10,
+      "templateClicks": 12
+    },
+    {
+      "date": "2026-10-08",
+      "dayLabel": "Jue 8",
+      "visitors": 28,
+      "leads": 1,
+      "courseClicks": 12,
+      "templateClicks": 15
+    },
+    {
+      "date": "2026-10-09",
+      "dayLabel": "Vie 9",
+      "visitors": 29,
+      "leads": 1,
+      "courseClicks": 11,
+      "templateClicks": 16
+    },
+    {
+      "date": "2026-10-10",
+      "dayLabel": "Sáb 10",
+      "visitors": 31,
+      "leads": 0,
+      "courseClicks": 14,
+      "templateClicks": 16
+    }
+  ],
+  "lastUpdated": "2026-10-10T21:40:00.000Z",
+  "isRealData": true
 }

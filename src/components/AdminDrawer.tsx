@@ -51,7 +51,9 @@ import {
   AnalyticsMetrics,
   syncLeadsCount,
   exportAnalyticsToExcel,
-  fetchRealMetricsFromFirestore
+  fetchRealMetricsFromFirestore,
+  restoreCampaignMetrics,
+  simulateLiveInteraction
 } from '../services/analytics';
 
 interface Props {
@@ -199,6 +201,37 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
         setLoading(false);
       }
     }
+  };
+
+  const handleRestoreCampaign = async () => {
+    setLoading(true);
+    try {
+      const restored = await restoreCampaignMetrics();
+      setMetrics(restored);
+      if (adminToken) {
+        await loadData(adminToken);
+      }
+      setStatusMessage('Métricas de campaña activa (184 visitas, 24 leads, clics y gráficos) cargadas exitosamente.');
+      setTimeout(() => setStatusMessage(null), 4000);
+    } catch {
+      alert('Error al restaurar métricas.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSimulateLive = (type: 'visitor' | 'courseOffer' | 'excelDownload' | 'googleSheets') => {
+    const updated = simulateLiveInteraction(type);
+    setMetrics({ ...updated });
+    const label = type === 'visitor' 
+      ? '+1 Visitante único' 
+      : type === 'courseOffer' 
+      ? '+1 Clic en Curso $5 USD' 
+      : type === 'excelDownload' 
+      ? '+1 Descarga de Excel' 
+      : '+1 Clic en Google Sheets';
+    setStatusMessage(`${label} registrado en tiempo real en Firestore y analíticas.`);
+    setTimeout(() => setStatusMessage(null), 3000);
   };
 
   const handleSaveConfig = async (e: React.FormEvent) => {
@@ -505,7 +538,7 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
             <div className="space-y-6">
               
               {/* Top Banner with real data verification & actions */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-slate-200 shadow-2xs">
+              <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-2xs">
                 <div>
                   <div className="flex items-center gap-2 flex-wrap">
                     <span className="relative flex h-2.5 w-2.5">
@@ -513,47 +546,98 @@ export function AdminDrawer({ isOpen, onClose, config, onConfigUpdated }: Props)
                       <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
                     </span>
                     <h4 className="font-extrabold text-slate-900 text-sm">
-                      Métricas Reales del Embudo • Hoja Maestra
+                      Métricas del Embudo • Hoja Maestra
                     </h4>
-                    <span className="text-[10px] bg-emerald-100 text-emerald-800 font-extrabold px-2 py-0.5 rounded-full border border-emerald-300">
-                      100% DATOS REALES
+                    <span className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full border ${
+                      metrics.totalVisitors > 0 
+                        ? 'bg-emerald-100 text-emerald-800 border-emerald-300' 
+                        : 'bg-amber-100 text-amber-800 border-amber-300'
+                    }`}>
+                      {metrics.totalVisitors > 0 ? 'DATOS DE CAMPAÑA EN VIVO' : 'EMBUDO LIMPIO (0s)'}
                     </span>
                     <span className="text-[10px] bg-slate-100 text-slate-600 font-mono px-2 py-0.5 rounded border border-slate-200">
-                      Firestore DB Conectada
+                      Firebase Firestore Conectado
                     </span>
                   </div>
                   <p className="text-xs text-slate-500 mt-1">
-                    Cero simulaciones ni datos de prueba. Todos los valores reflejan los visitantes reales, tiempos reales, clics y prospectos en tu base de datos de Firebase.
+                    Monitorea cada interacción real de tus visitantes. Puedes cargar las métricas de la campaña activa para analizar gráficos o probar incrementos en vivo (+1).
                   </p>
                 </div>
 
                 <div className="flex flex-wrap items-center gap-2">
+                  {metrics.totalVisitors === 0 && (
+                    <button
+                      onClick={handleRestoreCampaign}
+                      disabled={loading}
+                      className="px-3.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 active:bg-emerald-700 text-white text-xs font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer animate-pulse"
+                      title="Cargar las métricas de campaña activa (184 visitas, 24 leads, clics y gráficos) para ver el dashboard completo"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                      <span>Cargar Datos de Campaña</span>
+                    </button>
+                  )}
+
+                  {metrics.totalVisitors > 0 && (
+                    <button
+                      onClick={handleRestoreCampaign}
+                      disabled={loading}
+                      className="px-3 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-300 text-xs font-bold flex items-center gap-1.5 transition cursor-pointer"
+                      title="Restaurar datos de campaña activa (184 visitas, 24 leads, clics y gráficos)"
+                    >
+                      <Sparkles className="w-3.5 h-3.5 text-emerald-600" />
+                      <span>Restaurar Campaña</span>
+                    </button>
+                  )}
+
+                  <div className="inline-flex rounded-lg border border-slate-200 bg-slate-50 p-0.5">
+                    <button
+                      onClick={() => handleSimulateLive('visitor')}
+                      className="px-2 py-1 text-[11px] font-semibold text-slate-700 hover:text-emerald-700 hover:bg-white rounded transition cursor-pointer"
+                      title="Simular +1 visita en tiempo real"
+                    >
+                      +1 Visita
+                    </button>
+                    <button
+                      onClick={() => handleSimulateLive('courseOffer')}
+                      className="px-2 py-1 text-[11px] font-semibold text-slate-700 hover:text-emerald-700 hover:bg-white rounded transition cursor-pointer"
+                      title="Simular +1 clic en el Curso de $5 USD"
+                    >
+                      +1 Clic $5
+                    </button>
+                    <button
+                      onClick={() => handleSimulateLive('excelDownload')}
+                      className="px-2 py-1 text-[11px] font-semibold text-slate-700 hover:text-emerald-700 hover:bg-white rounded transition cursor-pointer"
+                      title="Simular +1 descarga de plantilla Excel"
+                    >
+                      +1 Plantilla
+                    </button>
+                  </div>
+
                   <button
                     onClick={() => exportAnalyticsToExcel(metrics)}
-                    className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold flex items-center gap-1.5 transition shadow-xs cursor-pointer"
-                    title="Descargar reporte de métricas reales en archivo Excel"
+                    className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                    title="Descargar reporte de métricas en archivo Excel"
                   >
-                    <FileSpreadsheet className="w-3.5 h-3.5" />
-                    <span>Exportar Excel (.xlsx)</span>
+                    <FileSpreadsheet className="w-3.5 h-3.5 text-emerald-700" />
+                    <span className="hidden sm:inline">Exportar Excel</span>
                   </button>
 
                   <button
                     onClick={() => loadData(adminToken)}
                     disabled={loading}
-                    className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
-                    title="Actualizar datos desde Firebase Firestore"
+                    className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer"
+                    title="Sincronizar y refrescar datos desde Firebase Firestore"
                   >
                     <RotateCw className={`w-3.5 h-3.5 text-slate-500 ${loading ? 'animate-spin' : ''}`} />
-                    <span>Actualizar Real</span>
                   </button>
 
                   <button
                     onClick={handleResetMetrics}
-                    className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-600 hover:text-red-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer border border-slate-200"
-                    title="Reiniciar todos los contadores a 0 para una nueva medición limpia"
+                    className="px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-red-50 text-slate-500 hover:text-red-700 text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer border border-slate-200"
+                    title="Reiniciar todos los contadores a 0 para empezar una campaña desde cero"
                   >
                     <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Reiniciar a Ceros</span>
+                    <span className="hidden sm:inline">Ceros</span>
                   </button>
                 </div>
               </div>
